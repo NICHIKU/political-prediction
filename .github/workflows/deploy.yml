@@ -40,6 +40,14 @@ jobs:
           push: true
           tags: ${{ env.IMAGE_PREFIX }}-django:latest
 
+      - name: Build & push Ingest
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./scripts/Dockerfile
+          push: true
+          tags: ghcr.io/nichiku/political-prediction-ingest:latest
+
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
