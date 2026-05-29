@@ -1,5 +1,5 @@
 ![Démo](django_political_app/static/images/demo.gif)
-
+test
 # Political Prediction
 
 ## 📋 Introduction
