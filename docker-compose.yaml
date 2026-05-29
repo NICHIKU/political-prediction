@@ -16,9 +16,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
-
+      
   ingest:
-    image: ghcr.io/edilenesilva/ingest-app:v1.0
+    image: ghcr.io/nichiku/political-prediction-ingest:latest
     depends_on:
       postgres:
         condition: service_healthy
@@ -27,7 +27,7 @@ services:
     restart: "no"
 
   fastapi:
-    image: ghcr.io/edilenesilva/fastapi-app:v1.0
+    image: ghcr.io/nichiku/political-prediction-fastapi:latest
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
 
   django:
-    image: ghcr.io/edilenesilva/django-app:v1.0
+    image: ghcr.io/nichiku/political-prediction-django:latest
     depends_on:
       - fastapi
     ports:
