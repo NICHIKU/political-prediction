@@ -41,48 +41,32 @@ jobs:
           tags: ${{ env.IMAGE_PREFIX }}-django:latest
 
   deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Copy docker-compose sur le VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          source: docker-compose.yaml
-          target: ~/political-prediction/
-
-      - name: Deploy sur le VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: ${{ secrets.VPS_SSH_PORT }}
-          script: |
-            mkdir -p ~/political-prediction
-            cd ~/political-prediction
-
-            # Récupère le docker-compose depuis le repo
-            curl -sO https://raw.githubusercontent.com/NICHIKU/political-prediction/develop/docker-compose.yaml
-
-            # Crée le fichier .env
-            cat > .env << EOF
-            POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-            POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-            POSTGRES_DB=${{ secrets.POSTGRES_DB }}
-            DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}
-            SECRET_KEY=${{ secrets.SECRET_KEY }}
-            DEBUG=${{ secrets.DEBUG }}
-            EOF
-
-            # Login et déploie
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker compose pull
-            docker compose up -d --remove-orphans
+      needs: build-and-push
+      runs-on: ubuntu-latest
+  
+      steps:
+        - name: Deploy sur le VPS
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.VPS_HOST }}
+            username: ${{ secrets.VPS_USER }}
+            key: ${{ secrets.VPS_SSH_KEY }}
+            port: ${{ secrets.VPS_SSH_PORT }}
+            script: |
+              mkdir -p ~/political-prediction
+              cd ~/political-prediction
+  
+              curl -sO https://raw.githubusercontent.com/NICHIKU/political-prediction/develop/docker-compose.yaml
+  
+              cat > .env << EOF
+              POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+              POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+              POSTGRES_DB=${{ secrets.POSTGRES_DB }}
+              DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}
+              SECRET_KEY=${{ secrets.SECRET_KEY }}
+              DEBUG=${{ secrets.DEBUG }}
+              EOF
+  
+              echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+              docker compose pull
+              docker compose up -d --remove-orphans
