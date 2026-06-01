@@ -19,8 +19,7 @@ if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
     print(f"✅ .env chargé depuis : {dotenv_path}")
 else:
-    print(f"❌ Erreur : .env introuvable à {dotenv_path}")
-    sys.exit(1)
+    print(f"⚠️ .env introuvable à {dotenv_path}, utilisation des variables d'environnement.")
 
 # 4. On ajoute le dossier 'api' au sys.path pour que 'from app...' fonctionne
 sys.path.append(os.path.join(root_path, 'api'))
