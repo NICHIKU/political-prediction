@@ -1,5 +1,5 @@
 services:
- traefik:
+  traefik:
     image: traefik:latest
     command:
       - "--providers.docker=true"
