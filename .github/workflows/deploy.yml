@@ -1,8 +1,8 @@
 name: Build & Deploy
 
 on:
-  push:
-    branches: [develop]
+  release:
+    types: [published]
 
 env:
   REGISTRY: ghcr.io
@@ -31,14 +31,18 @@ jobs:
         with:
           context: ./api
           push: true
-          tags: ${{ env.IMAGE_PREFIX }}-fastapi:latest
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-fastapi:latest
+            ${{ env.IMAGE_PREFIX }}-fastapi:${{ github.event.release.tag_name }}
 
       - name: Build & push Django
         uses: docker/build-push-action@v5
         with:
           context: ./django_political_app
           push: true
-          tags: ${{ env.IMAGE_PREFIX }}-django:latest
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-django:latest
+            ${{ env.IMAGE_PREFIX }}-django:${{ github.event.release.tag_name }}
 
       - name: Build & push Ingest
         uses: docker/build-push-action@v5
@@ -46,7 +50,9 @@ jobs:
           context: .
           file: ./scripts/Dockerfile
           push: true
-          tags: ghcr.io/nichiku/political-prediction-ingest:latest
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-ingest:latest
+            ${{ env.IMAGE_PREFIX }}-ingest:${{ github.event.release.tag_name }}
 
   deploy:
     needs: build-and-push
@@ -58,21 +64,11 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.VPS_SSH_KEY }}
 
-      - name: Debug key length
-        run: echo "${{ secrets.VPS_SSH_KEY }}" | wc -c
-
       - name: Add VPS to known hosts
         run: |
           ssh-keyscan -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Deploy sur le VPS
-        env:
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DEBUG: ${{ secrets.DEBUG }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           ssh -p ${{ secrets.VPS_SSH_PORT }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << EOF
             mkdir -p ~/political-prediction && cd ~/political-prediction
@@ -83,8 +79,7 @@ jobs:
             echo "DATABASE_URL=postgresql://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}" >> .env
             echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> .env
             echo "DEBUG=${{ secrets.DEBUG }}" >> .env
-            echo "ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}" >> .env 
-            
+            echo "ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}" >> .env
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u nichiku --password-stdin
             docker compose pull
             docker compose up -d --remove-orphans
